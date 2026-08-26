@@ -1,0 +1,21 @@
+# Core
+fire
+tqdm
+pyzipper
+tiktoken
+requests
+numpy
+
+# Closed-API model providers
+openai
+anthropic
+cohere
+google-generativeai
+
+# Local / open-weight model inference (optional — only needed for
+# transformers/guidance-based entries in data/model_list.json).
+# Comment these out if you're only benchmarking closed APIs.
+torch
+transformers
+bitsandbytes
+guidance
