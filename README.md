@@ -2,6 +2,12 @@
 
 https://aclanthology.org/2026.conll-main.28/ presented at CoNLL 2026
 
+## Revisions to paper
+
+26/08/2026: updated 'Majority vote' and 'Upper bound' values for Gemini 2.5 Flash (K=2 and K=4) in final table of results.
+
+## Repository
+
 This repository contains the benchmark data and code needed to reproduce the
 results in the paper. It covers three stages: (1) building the benchmark
 splits from the raw obfuscated question pool, (2) running language models
