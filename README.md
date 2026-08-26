@@ -1,4 +1,4 @@
-# LingOly — Benchmark Reproduction Package
+# Could language models win the Linguistics Olympiad?
 
 This repository contains the benchmark data and code needed to reproduce the
 results in the paper. It covers three stages: (1) building the benchmark
