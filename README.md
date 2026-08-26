@@ -1,4 +1,6 @@
-# LingOly — Benchmark Reproduction Package
+# Could language models win the Linguistics Olympiad?
+
+https://aclanthology.org/2026.conll-main.28/ presented at CoNLL 2026
 
 This repository contains the benchmark data and code needed to reproduce the
 results in the paper. It covers three stages: (1) building the benchmark
