@@ -20,7 +20,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 def uncompress_with_pyzipper(zip_file, password, output_dir):
-    with pyminizip.ZipFile(zip_file, 'r') as zip_ref:
+    with pyminizip.AESZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(path=output_dir, pwd=password.encode())
 
 MAX_API_ATTEMPT = 10

@@ -158,6 +158,15 @@ python benchmark_model.py \
 `--model` must match a key in `data/model_list.json`. Results are written to
 `data/responses_obf/` (created automatically).
 
+Pass `--generate_only True` to build and cache prompts without calling any
+model — useful for a quick, API-key-free sanity check that the data decrypts
+and loads correctly.
+
+Note: there is currently no scoring/evaluation script in this repo for the
+output of `benchmark_model*.py` (unlike the chained-prompting outputs, see
+step 4) — scoring against `data/responses_obf.zip` was done separately when
+producing the paper's results tables.
+
 ### 3. Chained (multi-turn) prompting
 
 One script per problem format:
@@ -210,6 +219,8 @@ settings for local models. Add a new model by adding an entry here.
   `--test_data_zip` to `benchmark.jsonl.zip` (the raw, non-deduplicated
   obfuscation pool). Pass `--test_data_zip` explicitly to point at
   `benchmark_same_obf.jsonl.zip` or another split.
+- No scoring script is included for `benchmark_model*.py` output (see
+  step 2 above) — only the chained-prompting outputs have an evaluator.
 - Some duplication remains across `benchmark_model*.py`, `load_questions*.py`,
   and `chained_prompting_{monolingual,pattern,rosetta}.py` — these are
   planned for consolidation into parameterized single scripts in a future

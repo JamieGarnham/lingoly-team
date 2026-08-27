@@ -45,17 +45,9 @@ except ImportError:
 
 # Constants
 MAX_API_ATTEMPT = 10
-# Dynamic path detection
-script_dir = os.path.dirname(os.path.abspath(__file__))
-if "testing_" in script_dir:
-    # Running from testing_X/code directory
-    base_dir = os.path.join(script_dir, "..", "..", "testing")
-else:
-    # Running from testing/code directory
-    base_dir = os.path.join(script_dir, "..")
-OUTFOLDER = os.path.join(base_dir, "data", "chained_responses")
-TMP_PATH = os.path.join(base_dir, "data", "chained_responses", "tmp")
-MODEL_LIST = os.path.join(base_dir, "data", "model_list.json")
+OUTFOLDER = "../../data/chained_responses"
+TMP_PATH = "../../data/chained_responses/tmp"
+MODEL_LIST = "../../data/model_list.json"
 def load_questions(file_path: str) -> Dict[int, List[Dict]]:
     """Load questions grouped by overall_question_n"""
     questions_by_problem = defaultdict(list)
