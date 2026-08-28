@@ -6,36 +6,6 @@ https://aclanthology.org/2026.conll-main.28/ presented at CoNLL 2026
 
 26/08/2026: updated 'Majority vote' and 'Upper bound' values for Gemini 2.5 Flash (K=2 and K=4) in final table of results.
 
-## Revisions to repository
-
-28/08/2026: Fixed three issues found while dry-running the reproduction steps below with synthetic model responses (no API calls):
-- `code/judging/eval_common.py`'s Table 1 "Correction 1" (Q5.1(a) accepting
-  any string containing both loanwords) silently never matched: the dataset
-  stores accented characters in NFD (decomposed) form, while the hardcoded
-  literals in that file are NFC (composed), so the `in` substring checks
-  always failed. `normalize_answer()` now NFC-normalizes before comparing.
-  This only affects the correctness of that one manually-corrected
-  subquestion; it does not change any of the headline results in the paper,
-  which were scored before this fix existed.
-- `data/splits/benchmark_same_obf.jsonl.zip` and
-  `benchmark_same_obf_rosetta.jsonl.zip` shipped with every entry's `format`
-  field set to `null`, rather than the Rosetta/Pattern/Monolingual/Match-up
-  value `create_benchmark_same_obf.py` actually looks up and writes today.
-  Both files have been regenerated with the current scripts; verified
-  byte-for-byte identical to the previous shipped files in every field
-  *except* `format` (same 173/107 obfuscation selections, same seed). This
-  field is otherwise unused downstream — `evaluate_baseline.py` and friends
-  look up format independently from `overall_question_format_mapping.csv` —
-  so this had no effect on any reported result, only on anyone reading the
-  split file's own `format` field directly.
-- `requirements.txt` was unpinned and, in practice, did not resolve to a
-  working environment via `pip install -r requirements.txt` — `guidance`
-  pulls in an exact `llguidance` version pip won't always satisfy on its
-  own, alongside several other transitively-missing packages (see the
-  comment in `requirements.txt`). All versions are now pinned to a
-  combination verified to install and run cleanly, including the
-  API-key-free `--generate_only` sanity check.
-
 ## Repository
 
 This repository contains the benchmark data and code needed to reproduce the
@@ -572,3 +542,6 @@ settings for local models. Add a new model by adding an entry here.
   and `chained_prompting_{monolingual,pattern,rosetta}.py` — these are
   planned for consolidation into parameterized single scripts in a future
   pass.
+
+## Acknowledgements
+26/08/2026: Thank you to JohnMark Taylor for helping to fix a couple of oversights! Much appreciated.
