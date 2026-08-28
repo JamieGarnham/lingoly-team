@@ -7,12 +7,20 @@ corrections below (see Table 1 of the paper) aren't duplicated three times.
 import ast
 import json
 import random
+import unicodedata
 from collections import Counter
 
 
 def normalize_answer(answer):
     if not isinstance(answer, str):
         answer = str(answer)
+    # NFC-normalize before comparing: dataset strings containing accented
+    # characters (e.g. ü = "ü") are stored decomposed (NFD), while
+    # literals typed into this file's source (e.g. "üpgontüd" below) are
+    # composed (NFC) by the editor. Without normalizing to a common form,
+    # equality/substring checks between the two silently never match even
+    # though the strings are visually identical.
+    answer = unicodedata.normalize("NFC", answer)
     return answer.strip().rstrip(".").lower()
 
 
@@ -58,18 +66,18 @@ def check_answer_correctness(answer, correct_answers, overall_question_n=None, q
         if "üpgontüd" in normalized_answer and "sopostüd" in normalized_answer:
             return True
 
-    # Correction 2: Q170 Q5.(k) accepts either apostrophe glyph.
+    # Correction 2: Q75 Q7.(3) also accepts the spelled-out equivalent of "(2n)".
+    if overall_question_n == 75 and question_n == "Q 7." and serial == "3":
+        if "two people who are not siblings" in normalized_answer:
+            return True
+
+    # Correction 3: Q170 Q5.(k) accepts either apostrophe glyph.
     if overall_question_n == 170 and question_n == "Q 5." and serial == "k":
         straight_apos, curly_apos = "'", chr(8217)
         if normalized_answer in (
             f"langgbu{straight_apos}", f"langgbu{curly_apos}",
             f"maysu{straight_apos}", f"maysu{curly_apos}",
         ):
-            return True
-
-    # Correction 3: Q75 Q7.(3) also accepts the spelled-out equivalent of "(2n)".
-    if overall_question_n == 75 and question_n == "Q 7." and serial == "3":
-        if "two people who are not siblings" in normalized_answer:
             return True
 
     normalized_correct = [normalize_answer(ca) for ca in correct_answers]

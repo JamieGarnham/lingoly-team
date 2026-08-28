@@ -1,0 +1,24 @@
+# OS / editor cruft
+.DS_Store
+__pycache__/
+*.pyc
+
+# Local virtualenvs
+venv/
+.venv/
+
+# Scratch / experimentation output (e.g. from a dry-run reproduction)
+scratch/
+
+# Script-generated run output. These are recreated from data/splits/ by the
+# steps in the README; nothing in them should be hand-authored or committed.
+# Contents of decrypted benchmark splits also belong here, since committing
+# them in plain text would defeat the contamination-protection zips.
+data/tmp/
+data/responses_obf/
+data/chained_responses/
+data/judge_output/
+data/mc_judge_output/
+data/matchup_analysis/
+code/judging/openrouter_runs/
+code/judging/openrouter_analysis/

@@ -6,6 +6,36 @@ https://aclanthology.org/2026.conll-main.28/ presented at CoNLL 2026
 
 26/08/2026: updated 'Majority vote' and 'Upper bound' values for Gemini 2.5 Flash (K=2 and K=4) in final table of results.
 
+## Revisions to repository
+
+28/08/2026: Fixed three issues found while dry-running the reproduction steps below with synthetic model responses (no API calls):
+- `code/judging/eval_common.py`'s Table 1 "Correction 1" (Q5.1(a) accepting
+  any string containing both loanwords) silently never matched: the dataset
+  stores accented characters in NFD (decomposed) form, while the hardcoded
+  literals in that file are NFC (composed), so the `in` substring checks
+  always failed. `normalize_answer()` now NFC-normalizes before comparing.
+  This only affects the correctness of that one manually-corrected
+  subquestion; it does not change any of the headline results in the paper,
+  which were scored before this fix existed.
+- `data/splits/benchmark_same_obf.jsonl.zip` and
+  `benchmark_same_obf_rosetta.jsonl.zip` shipped with every entry's `format`
+  field set to `null`, rather than the Rosetta/Pattern/Monolingual/Match-up
+  value `create_benchmark_same_obf.py` actually looks up and writes today.
+  Both files have been regenerated with the current scripts; verified
+  byte-for-byte identical to the previous shipped files in every field
+  *except* `format` (same 173/107 obfuscation selections, same seed). This
+  field is otherwise unused downstream — `evaluate_baseline.py` and friends
+  look up format independently from `overall_question_format_mapping.csv` —
+  so this had no effect on any reported result, only on anyone reading the
+  split file's own `format` field directly.
+- `requirements.txt` was unpinned and, in practice, did not resolve to a
+  working environment via `pip install -r requirements.txt` — `guidance`
+  pulls in an exact `llguidance` version pip won't always satisfy on its
+  own, alongside several other transitively-missing packages (see the
+  comment in `requirements.txt`). All versions are now pinned to a
+  combination verified to install and run cleanly, including the
+  API-key-free `--generate_only` sanity check.
+
 ## Repository
 
 This repository contains the benchmark data and code needed to reproduce the
@@ -116,9 +146,20 @@ pip install -r requirements.txt
 ```
 
 `requirements.txt` includes `torch`/`transformers`/`bitsandbytes`/`guidance`
-for running local, open-weight models. If you only need closed APIs
-(OpenAI, Anthropic, Google, Cohere, OpenRouter), you can comment those four
-out — they're the heaviest dependencies.
+for running local, open-weight models, plus their own transitive
+dependencies (`llguidance`, `guidance-stitch`, `psutil`, `jinja2`,
+`networkx`, `sympy`, `safetensors`, `typer`) pinned explicitly — a bare
+`pip install guidance`/`transformers` does not reliably resolve these on
+its own. If you only need closed APIs (OpenAI, Anthropic, Google, Cohere,
+OpenRouter), you can comment all ten of those out — they're the heaviest
+dependencies, and every version above them has been verified to install
+cleanly together in a fresh virtualenv.
+
+Note that `benchmark_model.py` / `benchmark_model_probabilities.py` /
+`benchmark_model_shuffle.py` import `torch`/`transformers`/`guidance` at
+the top of the file unconditionally, so even the API-key-free
+`--generate_only` sanity check below needs the local-inference packages
+installed too, regardless of which model you actually run.
 
 ### API keys
 
@@ -191,7 +232,15 @@ python benchmark_model.py \
   (`benchmark_same_obf_shuffle.jsonl.zip` by default)
 
 `--model` must match a key in `data/model_list.json`. Results are written to
-`data/responses_obf/` (created automatically).
+`data/responses_obf/` (created automatically), named after that key's
+`name` field (or `chkpoint` if set) — **not** the `--model` key itself.
+For example, `--model Sonnet` (whose `model_list.json` entry has
+`"name": "claude-3-5-sonnet-20241022"`) writes
+`claude-3-5-sonnet-20241022_lingoly.json`, not `Sonnet_lingoly.json`.
+The exact filename is also printed to stdout while the script runs
+(`Looking for cache for <name>_lingoly...`); check that if unsure before
+running step 5's commands, since they need the real filename to find the
+file.
 
 Pass `--generate_only True` to build and cache prompts without calling any
 model — useful for a quick, API-key-free sanity check that the data decrypts
@@ -248,17 +297,23 @@ cd code/benchmarking
 python benchmark_model.py --model Sonnet --repeats 32 \
     --test_data_zip ../../data/splits/benchmark_same_obf.jsonl.zip
 
+# The output filename is derived from model_list.json's "name" (or
+# "chkpoint") field for --model, NOT the --model key itself -- for
+# "Sonnet" that's "claude-3-5-sonnet-20241022", not "Sonnet" (see step 2
+# above). Capture it once so the rest of this block is copy-pasteable:
+OUT_NAME=claude-3-5-sonnet-20241022_lingoly_rp32
+
 # 2. Score it at the subquestion level (majority vote, tiebreaker, exact match)
 cd ../judging
-python evaluate_baseline.py ../../data/responses_obf/Sonnet_lingoly_rp32.json
+python evaluate_baseline.py ../../data/responses_obf/$OUT_NAME.json
 
 # 2 (alternative). To instead run the *original* evaluate_subquestions.py
 # script byte-for-byte as it ran in the private repo -- e.g. if you need to
 # cross-check against how the paper's numbers were actually produced --
 # first split the single --repeats output into the per-version file layout
 # it expects:
-python split_repeats_to_versions.py ../../data/responses_obf/Sonnet_lingoly_rp32.json
-python evaluate_subquestions.py Sonnet_lingoly_rp32 32
+python split_repeats_to_versions.py ../../data/responses_obf/$OUT_NAME.json
+python evaluate_subquestions.py $OUT_NAME 32
 # Both paths share the same scoring logic (eval_common.py) and produce
 # identical majority/tiebreaker/correctness columns -- verified against a
 # synthetic multi-repetition sample. Pick evaluate_baseline.py for less
@@ -266,17 +321,17 @@ python evaluate_subquestions.py Sonnet_lingoly_rp32 32
 # to the original file layout.
 
 # 3. Simulate smaller inference-time budgets (32 -> 16 -> 8 -> 4 -> 2 -> 1)
-python subsample_eval.py ../../data/responses_obf/Sonnet_lingoly_rp32_subquestion_eval.csv
+python subsample_eval.py ../../data/responses_obf/${OUT_NAME}_subquestion_eval.csv
 
 # 4. LLM-as-a-judge: reranking judge (Figure 12) and/or top-1/MC judge (Figure 13)
 python llm_judge_responses.py --model GPT_4o \
-    --response_data_csv ../../data/responses_obf/Sonnet_lingoly_rp32_subquestion_eval_8.csv
+    --response_data_csv ../../data/responses_obf/${OUT_NAME}_subquestion_eval_8.csv
 python llm_mc_responses.py --model GPT_4o \
-    --response_data_csv ../../data/responses_obf/Sonnet_lingoly_rp32_subquestion_eval_8.csv
+    --response_data_csv ../../data/responses_obf/${OUT_NAME}_subquestion_eval_8.csv
 
 # 5. Join the judge output back onto the subquestion CSV
 python join_judge_evaluation.py \
-    --subquestion_csv ../../data/responses_obf/Sonnet_lingoly_rp32_subquestion_eval_8.csv \
+    --subquestion_csv ../../data/responses_obf/${OUT_NAME}_subquestion_eval_8.csv \
     --judge_jsonl ../../data/judge_output/<judge output>.jsonl \
     --mc_judge_jsonl ../../data/mc_judge_output/<mc judge output>.jsonl
 ```
@@ -420,6 +475,43 @@ independently, since that recomputation *is* the inference-time-budget
 result being measured. Regenerating them from the `n=32` file with
 `subsample_eval.py` will produce a similar but not byte-identical result,
 since it doesn't reuse the private repo's exact original random draws.
+
+### Reconstructing Table 2's judge accuracy columns from `baseline_shuffle.zip`
+
+`llm_judge_responses.py` / `llm_mc_responses.py` only judge subquestions with
+2+ unique valid answers (`--min_unique_answers 2`, the default) — anything
+unanimous is left un-judged, since there's nothing for a judge to choose
+between. `join_judge_evaluation.py` reflects this: for a judged row,
+`is_judge_correct` / `is_mc_judge_correct` hold the judge's actual correctness
+(`True`/`False`); for an un-judged row, they're blank (`is_judge_used` /
+`is_mc_judge_used` is `False`), rather than `False`.
+
+Averaging `is_judge_correct` directly (e.g. `df["is_judge_correct"].mean()`
+with blanks treated as missing/skipped) therefore computes accuracy **only
+over the harder, judged subset** — not the "Rerank judge" / "Top-1 judge"
+percentage reported in Table 2, which is measured over *all* 1,005
+subquestions. To reproduce the paper's numbers, fall back to the
+(un-tied, since un-judged implies <2 unique answers) majority answer for
+every row the judge never saw:
+
+```python
+df["is_judge_correct_full"] = df.apply(
+    lambda r: r["is_judge_correct"] if r["is_judge_used"] else r["is_tiebreaker_correct"],
+    axis=1,
+)
+accuracy_pct = df["is_judge_correct_full"].mean() * 100
+```
+
+(substitute `is_mc_judge_correct` / `is_mc_judge_used` for the "Top-1 judge"
+column). This reproduces the paper's baseline (29.9) and upper-bound (58.3)
+figures exactly when applied to `deepseek/subquestion_eval_deepseek_shuffle_32_fix_with_judge_evaluation.csv`,
+and lands within roughly 1 percentage point of the reported Rerank/Top-1
+judge figures — the small remaining gap is most likely an artifact of using
+the shuffle-split file (whose baseline necessarily differs slightly from the
+paper's own, see §3.1/§4.1 of the paper) rather than an error in this
+formula. For an exact match to a specific paper figure, re-run
+`join_judge_evaluation.py` end-to-end rather than reconstructing it from the
+CSV's columns by hand.
 
 ## Model configuration
 

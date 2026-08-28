@@ -1,21 +1,38 @@
 # Core
-fire
-tqdm
-pyzipper
-tiktoken
-requests
-numpy
+fire==0.7.1
+tqdm==4.70.0
+pyzipper==0.4.0
+tiktoken==0.14.0
+requests==2.34.2
+numpy==2.4.6
 
 # Closed-API model providers
-openai
-anthropic
-cohere
-google-generativeai
+openai==3.5.0
+anthropic==1.2.0
+cohere==7.1.0
+google-generativeai==0.8.6
 
 # Local / open-weight model inference (optional — only needed for
 # transformers/guidance-based entries in data/model_list.json).
-# Comment these out if you're only benchmarking closed APIs.
-torch
-transformers
-bitsandbytes
-guidance
+# Comment these ten out if you're only benchmarking closed APIs.
+#
+# guidance's own dependency resolution is broken on a bare `pip install
+# guidance` (it needs an exact llguidance version, plus guidance-stitch,
+# psutil and jinja2 that pip won't always pull in on its own), and
+# transformers/torch have similarly strict transitive requirements
+# (safetensors, typer, networkx, sympy) that a fresh environment can be
+# missing. All of these are pinned explicitly below so
+# `pip install -r requirements.txt` succeeds without manually chasing
+# ModuleNotFoundError/PackageNotFoundError one dependency at a time.
+torch==2.13.0
+transformers==5.16.1
+bitsandbytes==0.50.2
+guidance==0.3.1
+llguidance==1.5.0
+guidance-stitch==0.1.5
+psutil==7.2.2
+jinja2==3.1.6
+networkx==3.6.1
+sympy==1.14.0
+safetensors==0.8.0
+typer==0.27.1
