@@ -4,7 +4,7 @@ https://aclanthology.org/2026.conll-main.28/ presented at CoNLL 2026
 
 ## Revisions to paper
 
-26/08/2026: updated 'Majority vote' and 'Upper bound' values for Gemini 2.5 Flash (K=2 and K=4) in final table of results.
+26/08/2026: updated 'Majority vote' and 'Upper bound' values for Gemini 2.5 Flash (K=2 and K=4) in final table of results and Figure 5; updated 'Majority vote' values for Llama 3.3 and Deepseek R1 (K=2) and Figure 8.
 
 ## Repository
 
